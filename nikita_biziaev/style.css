@@ -1,0 +1,110 @@
+﻿body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+  background: #160d1f;
+  color: #f0e7f5;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+figure {
+  box-sizing: border-box;
+  display: inline-block;
+  vertical-align: top;
+  width: 300px;
+  height: 200px;
+  margin: 0 16px 16px 0;
+  padding: 20px;
+  color: #f0e7f5;
+  background: #2e1d3b;
+  border: 1px solid #452f5a;
+  border-radius: 20px;
+  font-weight: bold;
+  white-space: pre-line;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: min(760px, calc(100% - 32px));
+  height: 56px;
+  margin: 40px auto 0;
+  padding: 6px 8px 6px 10px;
+  background: #3a1f4a;
+  border: 1px solid #6a4c8a;
+  border-radius: 999px;
+}
+
+.search-bar__btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #e8d8f3;
+  cursor: pointer;
+}
+
+.search-bar__btn svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.search-bar__btn:hover {
+  background: #4f2d6a;
+}
+
+#our-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  margin: 0 4px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #f3eaf7;
+  caret-color: #b295d5;
+  font: 16px Arial, Helvetica, sans-serif;
+}
+
+.search-bar__ai {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  margin-left: 2px;
+  padding: 0 14px 0 10px;
+  border: 1px solid #8852b7;
+  border-radius: 999px;
+  background: #4f2d6a;
+  color: #f8f3fb;
+  font: 14px Arial, Helvetica, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.search-bar__ai:hover {
+  background: #5b357a;
+}
+
+.search-bar__ai svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
