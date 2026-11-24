@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sterk2020-db
+    environment:
+      POSTGRES_DB: sterk2020
+      POSTGRES_USER: sterkuser
+      POSTGRES_PASSWORD: sterkpass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sterkuser -d sterk2020"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: sterk2020-backend
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: sterk2020
+      DB_USER: sterkuser
+      DB_PASSWORD: sterkpass
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
