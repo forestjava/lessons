@@ -1,22 +1,26 @@
 const http = require('http');
+const { Pool } = require('pg');
 
 const PORT = 3000;
 
-// Демонстрационный каталог: backend возвращает массив объектов JSON.
-const products = [
-  { id: 1, title: 'Уютная квартира с видом на море', price: 650, city: 'Bar', category: 'Недвижимость', image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=700&q=80' },
-  { id: 2, title: 'iPhone 13, 128 GB', price: 280, city: 'Budva', category: 'Электроника', image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=700&q=80' },
-  { id: 3, title: 'Диван раскладной, почти новый', price: 190, city: 'Podgorica', category: 'Мебель', image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=700&q=80' },
-  { id: 4, title: 'Сантехник — выезд по побережью', price: 25, city: 'Bar', category: 'Сантехника', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=700&q=80' },
-  { id: 5, title: 'Volkswagen Golf 6 · 2011', price: 5900, city: 'Tivat', category: 'Транспорт', image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=700&q=80' },
-  { id: 6, title: 'Профессиональная уборка квартир', price: 35, city: 'Kotor', category: 'Уборка', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=700&q=80' },
-  { id: 7, title: 'Набор инструментов для дома', price: 45, city: 'Sutomore', category: 'Товары для дома', image: 'https://images.unsplash.com/photo-1581147036324-c1c89c2c8a39?auto=format&fit=crop&w=700&q=80' },
-  { id: 8, title: 'Перевозка вещей и небольшие переезды', price: 20, city: 'Herceg Novi', category: 'Перевозки', image: 'https://images.unsplash.com/photo-1600518464441-9306b1b9d7c5?auto=format&fit=crop&w=700&q=80' }
-];
+const pool = new Pool({
+  host: process.env.DB_HOST || '127.0.0.1',
+  port: Number(process.env.DB_PORT || 5432),
+  database: process.env.DB_NAME || 'sterk2020',
+  user: process.env.DB_USER || 'sterkuser',
+  password: process.env.DB_PASSWORD || 'sterkpass'
+});
 
-const server = http.createServer((req, res) => {
+function send(res, status, data) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8'
+  });
+  res.end(JSON.stringify(data));
+}
+
+const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -24,16 +28,73 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
-  if (req.method === 'GET' && req.url === '/api/products') {
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    return res.end(JSON.stringify(products));
+  const path = new URL(req.url, 'http://localhost').pathname;
+
+  if (path === '/api/products' && req.method === 'GET') {
+    try {
+      const result = await pool.query(
+        'SELECT id, title, price, city, category, image FROM products ORDER BY id'
+      );
+
+      const products = result.rows.map(item => ({
+        ...item,
+        price: Number(item.price)
+      }));
+
+      return send(res, 200, products);
+    } catch (error) {
+      console.error(error);
+      return send(res, 500, { error: 'Ошибка получения товаров' });
+    }
   }
 
-  res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ error: 'Маршрут не найден' }));
+  if (path === '/api/products' && req.method === 'POST') {
+    let body = '';
+
+    req.on('data', chunk => {
+      body += chunk;
+    });
+
+    req.on('end', async () => {
+      try {
+        const product = JSON.parse(body);
+
+        const title = String(product.title || '').trim();
+        const city = String(product.city || '').trim();
+        const category = String(product.category || '').trim();
+        const image = String(product.image || '');
+        const price = Number(product.price);
+
+        if (!title || !city || !category ||
+            product.price === '' || product.price == null ||
+            !Number.isFinite(price) || price < 0) {
+          return send(res, 400, { error: 'Проверьте заполнение полей' });
+        }
+
+        const result = await pool.query(
+          `INSERT INTO products (title, price, city, category, image)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id, title, price, city, category, image`,
+          [title, price, city, category, image]
+        );
+
+        return send(res, 201, {
+          ...result.rows[0],
+          price: Number(result.rows[0].price)
+        });
+      } catch (error) {
+        console.error(error);
+        return send(res, 400, { error: 'Некорректные данные товара' });
+      }
+    });
+
+    return;
+  }
+
+  return send(res, 404, { error: 'Маршрут не найден' });
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Backend запущен: http://localhost:${PORT}`);
-  console.log(`API каталога: http://localhost:${PORT}/api/products`);
+  console.log(`Backend запущен на порту ${PORT}`);
+  console.log(`Каталог: http://localhost:${PORT}/api/products`);
 });
