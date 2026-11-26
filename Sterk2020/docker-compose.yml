@@ -29,6 +29,15 @@ services:
     depends_on:
       db:
         condition: service_healthy
+  frontend:
+    build: ./frontend
+    container_name: sterk2020-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
+0
+
